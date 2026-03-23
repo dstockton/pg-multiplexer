@@ -1,0 +1,69 @@
+# pg-multiplexer configuration
+# All values shown are defaults.
+
+# Address to listen for Postgres client connections.
+listen_addr = "0.0.0.0:5433"
+
+# Address to listen for admin HTTP server (dashboard, metrics, API).
+admin_listen_addr = "0.0.0.0:9090"
+
+# Default upstream Postgres host. Clients provide db/user/password;
+# the multiplexer connects to this host on their behalf.
+upstream_host = "localhost"
+
+# Default upstream Postgres port.
+upstream_port = 5432
+
+[pool]
+# Max server connections per pool key (unique host:port/db@user).
+max_connections_per_pool = 20
+
+# Global max server connections across all pools.
+max_total_connections = 500
+
+# How long to wait for a server connection before timing out (milliseconds).
+acquire_timeout_ms = 5000
+
+# Idle server connection timeout before eviction (seconds).
+idle_timeout_secs = 300
+
+# Health check interval for idle connections (seconds).
+health_check_interval_secs = 30
+
+# Max client connections waiting in queue per pool.
+max_queue_size = 1000
+
+# Connection lifetime before forced recycling (seconds).
+max_connection_lifetime_secs = 3600
+
+[tls]
+# Enable TLS on the client-facing side.
+enabled = false
+
+# Path to TLS certificate (PEM format).
+# cert_path = "/etc/pg-multiplexer/server.crt"
+
+# Path to TLS private key (PEM format).
+# key_path = "/etc/pg-multiplexer/server.key"
+
+# Require TLS from clients (reject plaintext connections).
+require_tls = false
+
+# Use TLS when connecting to upstream Postgres.
+upstream_tls = false
+
+# Accept invalid/self-signed certs from upstream.
+upstream_tls_accept_invalid = false
+
+[monitor]
+# How often to check database sizes (seconds).
+check_interval_secs = 60
+
+# Default max DB size if not specified in connection string (bytes, 0 = unlimited).
+# Clients can override per-connection via the max_db_size startup parameter.
+# Supports suffixes: KB, MB, GB, TB (case insensitive).
+default_max_db_size_bytes = 0
+
+# Allow DELETE/TRUNCATE/DROP/VACUUM even when DB is over its size limit,
+# so tenants can reduce their database size.
+allow_shrink_operations_when_overlimit = true
