@@ -243,18 +243,49 @@ pub async fn handle_client(
         "Client authenticated, starting proxy"
     );
 
-    // Phase 4: Proxy loop — relay messages between client and backend
-    proxy_loop(
-        &mut stream,
-        &mut server_conn,
-        &pool_key,
-        &size_monitor,
-        &cfg,
-        &startup_info,
-    )
-    .await?;
+    // Determine the effective size limit for this session
+    let effective_limit = startup_info.max_db_size
+        .or(if cfg.monitor.default_max_db_size_bytes > 0 {
+            Some(cfg.monitor.default_max_db_size_bytes)
+        } else {
+            None
+        })
+        .unwrap_or(0);
 
-    // Return connection to pool
+    // Register session to get per-session over-limit flag
+    let (session_id, over_limit_flag) = size_monitor.register_session(
+        &pool_key.database,
+        effective_limit,
+    );
+
+    // Phase 4: Proxy — start in fast mode, transition as needed
+    let mut scanner = MessageBoundaryScanner::new();
+    let mut bufs = ProxyBuffers::new();
+    loop {
+        match fast_proxy_loop(
+            &mut stream, &mut server_conn, &over_limit_flag, &mut scanner, &mut bufs,
+        ).await? {
+            ProxyLoopExit::ClientDisconnected => break,
+            ProxyLoopExit::SwitchToSlow => {
+                debug!(db = %pool_key.database, "Switching to slow proxy (over limit)");
+            }
+            ProxyLoopExit::SwitchToFast => unreachable!("fast loop doesn't return SwitchToFast"),
+        }
+
+        match slow_proxy_loop(
+            &mut stream, &mut server_conn, &pool_key, &size_monitor,
+            &cfg, &startup_info, &over_limit_flag, &mut scanner, &mut bufs,
+        ).await? {
+            ProxyLoopExit::ClientDisconnected => break,
+            ProxyLoopExit::SwitchToFast => {
+                debug!(db = %pool_key.database, "Switching to fast proxy (under limit)");
+            }
+            ProxyLoopExit::SwitchToSlow => unreachable!("slow loop doesn't return SwitchToSlow"),
+        }
+    }
+
+    // Unregister session and return connection to pool
+    size_monitor.unregister_session(session_id);
     pool_manager.release(pool_key, server_conn).await;
 
     Ok(())
