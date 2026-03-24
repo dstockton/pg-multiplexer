@@ -23,13 +23,14 @@ PgMux solves this by acting as a lightweight, tenant-aware gateway.
 
 ## Key Features
 
+- **Two-tier proxy** — raw byte forwarding for normal traffic, full message parsing only when enforcement is needed
 - Connection multiplexing across many databases and users
 - Tenant-aware routing and isolation
 - Per-tenant database size limits with automatic write restriction
 - Connection pool limits per tenant and globally
 - Admin dashboard with real-time metrics
-- Prometheus-compatible metrics endpoint
-- Designed for serverless and multi-tenant environments
+- Prometheus-compatible metrics endpoint (OpenMetrics)
+- Auth delegation via `postgres-protocol` (supports cleartext, MD5, SCRAM-SHA-256)
 
 ---
 
@@ -47,11 +48,19 @@ PgMux solves this by acting as a lightweight, tenant-aware gateway.
 PgMux accepts Postgres client connections and routes them to upstream
 Postgres based on the database and user provided at connect time.
 
-It can:
-- enforce per-tenant database size limits (automatic read-only when exceeded)
-- allow shrink operations (DELETE, TRUNCATE, DROP) even when over limit
+For normal traffic, PgMux operates in **fast path** mode — raw bytes are
+forwarded between client and server with no message parsing. A lightweight
+boundary scanner tracks transaction state for connection pool management.
+
+When a tenant exceeds their database size limit, PgMux switches to
+**slow path** mode for that session — full message parsing with automatic
+read-only enforcement. Shrink operations (DELETE, TRUNCATE, DROP) are
+still permitted so tenants can reduce their usage.
+
+Other capabilities:
 - pool and reuse backend connections across tenant sessions
 - expose pool stats, database sizes, and health via HTTP API and dashboard
+- per-connection size limits via `max_db_size` startup parameter
 
 ---
 
