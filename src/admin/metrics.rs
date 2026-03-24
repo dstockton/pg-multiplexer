@@ -11,7 +11,6 @@ pub struct DatabaseLabels {
 }
 
 /// All application metrics.
-#[allow(dead_code)]
 pub struct Metrics {
     pub registry: Registry,
 

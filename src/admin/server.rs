@@ -16,7 +16,6 @@ use crate::pool::PoolManager;
 
 /// Shared state for the admin server.
 #[derive(Clone)]
-#[allow(dead_code)]
 pub struct AdminState {
     pub cfg: Arc<Config>,
     pub metrics: Arc<Metrics>,

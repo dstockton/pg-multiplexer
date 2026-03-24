@@ -265,37 +265,3 @@ pub async fn reset_connection(stream: &mut TcpStream) -> Result<()> {
     }
 }
 
-/// Check if a backend connection is healthy.
-#[allow(dead_code)]
-pub async fn health_check(stream: &mut TcpStream) -> Result<()> {
-    // Send a simple query
-    let query = b"SELECT 1\0";
-    let mut msg = BytesMut::new();
-    msg.put_u8(b'Q');
-    msg.put_i32((query.len() + 4) as i32);
-    msg.extend_from_slice(query);
-    stream.write_all(&msg).await?;
-    stream.flush().await?;
-
-    let mut buf = BytesMut::with_capacity(512);
-    let start = std::time::Instant::now();
-    let timeout = std::time::Duration::from_secs(5);
-
-    loop {
-        if start.elapsed() > timeout {
-            bail!("Health check timed out");
-        }
-        let n = stream.read_buf(&mut buf).await?;
-        if n == 0 {
-            bail!("Backend disconnected during health check");
-        }
-        while let Some(msg) = try_read_message(&mut buf, false)? {
-            if msg.msg_type == b'Z' {
-                return Ok(());
-            }
-            if msg.msg_type == b'E' {
-                bail!("Health check failed");
-            }
-        }
-    }
-}

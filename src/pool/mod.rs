@@ -231,18 +231,6 @@ impl PoolManager {
         self.total_server_connections.load(Ordering::Relaxed)
     }
 
-    /// Run periodic maintenance: evict idle/expired connections, health checks.
-    #[allow(dead_code)]
-    pub async fn run_maintenance(&self) {
-        let interval = Duration::from_secs(self.cfg.pool.health_check_interval_secs);
-        let mut ticker = tokio::time::interval(interval);
-
-        loop {
-            ticker.tick().await;
-            self.evict_expired_connections().await;
-        }
-    }
-
     async fn evict_expired_connections(&self) {
         let idle_timeout = Duration::from_secs(self.cfg.pool.idle_timeout_secs);
         let max_lifetime = Duration::from_secs(self.cfg.pool.max_connection_lifetime_secs);
