@@ -87,10 +87,8 @@ async fn start_multiplexer() -> (SocketAddr, SocketAddr, tokio::task::JoinHandle
                 tokio::spawn(async move {
                     m2.client_connections_total.inc();
                     m2.client_connections_active.inc();
-                    let _ = pgmux::protocol::handle_client(
-                        stream, addr, pool_mgr, sz2, None, c2,
-                    )
-                    .await;
+                    let _ =
+                        pgmux::protocol::handle_client(stream, addr, pool_mgr, sz2, None, c2).await;
                     m2.client_connections_active.dec();
                 });
             }

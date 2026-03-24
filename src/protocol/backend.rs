@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use bytes::{Buf, BufMut, BytesMut};
-use postgres_protocol::authentication::sasl;
 use postgres_protocol::authentication::md5_hash;
+use postgres_protocol::authentication::sasl;
 use postgres_protocol::message::frontend as pgfe;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -96,7 +96,11 @@ pub async fn connect_backend(
 
                             // Send SASLInitialResponse with client-first message
                             let mut sasl_buf = BytesMut::new();
-                            pgfe::sasl_initial_response("SCRAM-SHA-256", scram.message(), &mut sasl_buf)?;
+                            pgfe::sasl_initial_response(
+                                "SCRAM-SHA-256",
+                                scram.message(),
+                                &mut sasl_buf,
+                            )?;
                             stream.write_all(&sasl_buf).await?;
                             stream.flush().await?;
 
@@ -264,4 +268,3 @@ pub async fn reset_connection(stream: &mut TcpStream) -> Result<()> {
         }
     }
 }
-

@@ -234,7 +234,9 @@ impl DbSizeMonitor {
                         continue;
                     }
                     if let Some(size) = self.db_sizes.get(&session.database) {
-                        session.over_limit.store(*size > session.limit_bytes, Ordering::Relaxed);
+                        session
+                            .over_limit
+                            .store(*size > session.limit_bytes, Ordering::Relaxed);
                     }
                 }
             }
