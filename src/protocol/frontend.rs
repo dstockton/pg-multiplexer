@@ -118,8 +118,6 @@ pub async fn handle_client(
             .get("database")
             .cloned()
             .unwrap_or_else(|| user.clone());
-        let application_name = params.get("application_name").cloned().unwrap_or_default();
-
         // Check for max_db_size in options or as a custom parameter
         let max_db_size = params
             .get("max_db_size")
@@ -149,7 +147,6 @@ pub async fn handle_client(
             database,
             password: String::new(), // will be filled during auth
             max_db_size,
-            application_name,
             extra_params,
         };
     };

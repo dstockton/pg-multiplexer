@@ -41,10 +41,7 @@ async fn start_multiplexer() -> (SocketAddr, SocketAddr, tokio::task::JoinHandle
 
     let metrics = Arc::new(admin::metrics::Metrics::new());
     let pool_manager = Arc::new(PoolManager::new(cfg.clone(), metrics.clone()));
-    let size_monitor = Arc::new(DbSizeMonitor::new(
-        cfg.clone(),
-        metrics.clone(),
-    ));
+    let size_monitor = Arc::new(DbSizeMonitor::new(cfg.clone(), metrics.clone()));
 
     // Bind the PG listener
     let pg_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -63,7 +60,6 @@ async fn start_multiplexer() -> (SocketAddr, SocketAddr, tokio::task::JoinHandle
         tokio::spawn(async move {
             // Start admin server in background
             let admin_state = admin::server::AdminState {
-                cfg: c.clone(),
                 metrics: m.clone(),
                 pool_manager: pool_mgr.clone(),
                 size_monitor: sz.clone(),

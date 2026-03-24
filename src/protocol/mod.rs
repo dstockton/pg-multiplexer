@@ -30,6 +30,5 @@ pub struct ClientStartupInfo {
     pub database: String,
     pub password: String,
     pub max_db_size: Option<u64>,
-    pub application_name: String,
     pub extra_params: Vec<(String, String)>,
 }

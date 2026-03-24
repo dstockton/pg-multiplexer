@@ -230,7 +230,6 @@ impl PoolManager {
     pub fn total_connections(&self) -> u64 {
         self.total_server_connections.load(Ordering::Relaxed)
     }
-
 }
 
 /// Statistics for a single connection pool.

@@ -30,10 +30,6 @@ pub struct Metrics {
     pub db_size_bytes: Family<DatabaseLabels, Gauge<f64, AtomicU64>>,
     pub db_size_limit_bytes: Family<DatabaseLabels, Gauge<f64, AtomicU64>>,
     pub db_over_limit: Family<DatabaseLabels, Gauge<f64, AtomicU64>>,
-
-    // Query metrics
-    pub queries_total: Counter<u64>,
-    pub queries_read_only_enforced: Counter<u64>,
 }
 
 impl Metrics {
@@ -51,9 +47,6 @@ impl Metrics {
         let db_size_bytes = Family::<DatabaseLabels, Gauge<f64, AtomicU64>>::default();
         let db_size_limit_bytes = Family::<DatabaseLabels, Gauge<f64, AtomicU64>>::default();
         let db_over_limit = Family::<DatabaseLabels, Gauge<f64, AtomicU64>>::default();
-        let queries_total = Counter::<u64>::default();
-        let queries_read_only_enforced = Counter::<u64>::default();
-
         registry.register(
             "pgmux_client_connections_total",
             "Total client connections accepted",
@@ -109,17 +102,6 @@ impl Metrics {
             "Whether database is over its size limit (1=over, 0=ok)",
             db_over_limit.clone(),
         );
-        registry.register(
-            "pgmux_queries_total",
-            "Total queries proxied",
-            queries_total.clone(),
-        );
-        registry.register(
-            "pgmux_queries_read_only_enforced",
-            "Queries where read-only was enforced due to size limit",
-            queries_read_only_enforced.clone(),
-        );
-
         Self {
             registry,
             client_connections_total,
@@ -133,8 +115,6 @@ impl Metrics {
             db_size_bytes,
             db_size_limit_bytes,
             db_over_limit,
-            queries_total,
-            queries_read_only_enforced,
         }
     }
 }

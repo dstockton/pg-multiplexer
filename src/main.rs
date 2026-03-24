@@ -56,10 +56,7 @@ async fn main() -> Result<()> {
 
     let metrics = Arc::new(admin::metrics::Metrics::new());
     let pool_manager = Arc::new(pool::PoolManager::new(cfg.clone(), metrics.clone()));
-    let size_monitor = Arc::new(monitor::DbSizeMonitor::new(
-        cfg.clone(),
-        metrics.clone(),
-    ));
+    let size_monitor = Arc::new(monitor::DbSizeMonitor::new(cfg.clone(), metrics.clone()));
 
     // Start the DB size monitor background task
     let _monitor_handle = {

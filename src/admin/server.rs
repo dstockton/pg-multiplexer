@@ -17,7 +17,6 @@ use crate::pool::PoolManager;
 /// Shared state for the admin server.
 #[derive(Clone)]
 pub struct AdminState {
-    pub cfg: Arc<Config>,
     pub metrics: Arc<Metrics>,
     pub pool_manager: Arc<PoolManager>,
     pub size_monitor: Arc<DbSizeMonitor>,
@@ -31,7 +30,6 @@ pub async fn run(
     size_monitor: Arc<DbSizeMonitor>,
 ) -> Result<()> {
     let state = AdminState {
-        cfg: cfg.clone(),
         metrics,
         pool_manager,
         size_monitor,
