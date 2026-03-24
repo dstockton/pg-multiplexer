@@ -1,4 +1,5 @@
 use dashmap::DashMap;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
@@ -6,6 +7,14 @@ use tracing::{debug, error, info, warn};
 use crate::admin::metrics::{DatabaseLabels, Metrics};
 use crate::config::Config;
 use crate::pool::PoolManager;
+
+static SESSION_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+struct SessionLimit {
+    database: String,
+    limit_bytes: u64,
+    over_limit: Arc<AtomicBool>,
+}
 
 /// Monitors database sizes and tracks configured limits.
 #[allow(dead_code)]
@@ -17,6 +26,8 @@ pub struct DbSizeMonitor {
     db_sizes: DashMap<String, u64>,
     /// Configured size limits (db_name -> max size in bytes).
     db_limits: DashMap<String, u64>,
+    /// Per-session over-limit flags.
+    sessions: DashMap<u64, SessionLimit>,
 }
 
 impl DbSizeMonitor {
@@ -27,6 +38,7 @@ impl DbSizeMonitor {
             metrics,
             db_sizes: DashMap::new(),
             db_limits: DashMap::new(),
+            sessions: DashMap::new(),
         }
     }
 
@@ -66,6 +78,30 @@ impl DbSizeMonitor {
             }
         }
         false
+    }
+
+    /// Register a session with a per-session size limit, returning an ID and over-limit flag.
+    pub fn register_session(&self, database: &str, limit_bytes: u64) -> (u64, Arc<AtomicBool>) {
+        let id = SESSION_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let flag = Arc::new(AtomicBool::new(false));
+        if limit_bytes > 0 {
+            if let Some(current_size) = self.get_db_size(database) {
+                if current_size > limit_bytes {
+                    flag.store(true, Ordering::Relaxed);
+                }
+            }
+        }
+        self.sessions.insert(id, SessionLimit {
+            database: database.to_string(),
+            limit_bytes,
+            over_limit: flag.clone(),
+        });
+        (id, flag)
+    }
+
+    /// Unregister a session by ID.
+    pub fn unregister_session(&self, id: u64) {
+        self.sessions.remove(&id);
     }
 
     /// Get all tracked databases with their sizes and limits.
@@ -205,6 +241,17 @@ impl DbSizeMonitor {
                         }
                     }
                 }
+
+                // Update per-session over-limit flags
+                for entry in self.sessions.iter() {
+                    let session = entry.value();
+                    if session.limit_bytes == 0 {
+                        continue;
+                    }
+                    if let Some(size) = self.db_sizes.get(&session.database) {
+                        session.over_limit.store(*size > session.limit_bytes, Ordering::Relaxed);
+                    }
+                }
             }
             Err(e) => {
                 error!(
@@ -256,5 +303,34 @@ mod tests {
         assert_eq!(format_bytes(1024), "1.00 KB");
         assert_eq!(format_bytes(1024 * 1024), "1.00 MB");
         assert_eq!(format_bytes(5 * 1024 * 1024 * 1024), "5.00 GB");
+    }
+
+    #[test]
+    fn test_session_registry() {
+        use std::sync::atomic::Ordering;
+
+        let monitor = DbSizeMonitor {
+            cfg: Arc::new(crate::config::Config::default()),
+            pool_manager: Arc::new(crate::pool::PoolManager::new(
+                Arc::new(crate::config::Config::default()),
+                Arc::new(crate::admin::metrics::Metrics::new()),
+            )),
+            metrics: Arc::new(crate::admin::metrics::Metrics::new()),
+            db_sizes: DashMap::new(),
+            db_limits: DashMap::new(),
+            sessions: DashMap::new(),
+        };
+
+        monitor.db_sizes.insert("testdb".to_string(), 500);
+
+        let (id1, flag1) = monitor.register_session("testdb", 1000);
+        assert!(!flag1.load(Ordering::Relaxed));
+
+        let (id2, flag2) = monitor.register_session("testdb", 100);
+        assert!(flag2.load(Ordering::Relaxed));
+
+        monitor.unregister_session(id1);
+        monitor.unregister_session(id2);
+        assert!(monitor.sessions.is_empty());
     }
 }
