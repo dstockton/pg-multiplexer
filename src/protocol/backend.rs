@@ -164,14 +164,13 @@ async fn handle_scram_auth(
     let client_nonce: String = (0..24)
         .map(|_| {
             let idx = rand::random::<u8>() % 62;
-            let c = if idx < 10 {
+            if idx < 10 {
                 (b'0' + idx) as char
             } else if idx < 36 {
                 (b'A' + idx - 10) as char
             } else {
                 (b'a' + idx - 36) as char
-            };
-            c
+            }
         })
         .collect();
 
@@ -243,7 +242,7 @@ async fn handle_scram_auth(
     client_key_mac.update(b"Client Key");
     let client_key = client_key_mac.finalize().into_bytes();
 
-    let stored_key = Sha256::digest(&client_key);
+    let stored_key = Sha256::digest(client_key);
 
     let channel_binding = "c=biws"; // base64("n,,")
     let client_final_without_proof = format!("{},r={}", channel_binding, server_nonce);
@@ -263,7 +262,7 @@ async fn handle_scram_auth(
     }
 
     let proof_b64 =
-        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &client_proof);
+        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, client_proof);
     let client_final = format!("{},p={}", client_final_without_proof, proof_b64);
 
     // Send SASLResponse
@@ -299,7 +298,7 @@ async fn handle_scram_auth(
 
                         let expected_b64 = base64::Engine::encode(
                             &base64::engine::general_purpose::STANDARD,
-                            &expected_sig,
+                            expected_sig,
                         );
                         if sig != expected_b64 {
                             bail!("SCRAM: server signature mismatch");
@@ -408,6 +407,7 @@ pub async fn reset_connection(stream: &mut TcpStream) -> Result<()> {
 }
 
 /// Check if a backend connection is healthy.
+#[allow(dead_code)]
 pub async fn health_check(stream: &mut TcpStream) -> Result<()> {
     // Send a simple query
     let query = b"SELECT 1\0";

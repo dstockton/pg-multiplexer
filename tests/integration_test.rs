@@ -31,12 +31,13 @@ async fn start_multiplexer() -> (SocketAddr, SocketAddr, tokio::task::JoinHandle
     use pg_multiplexer::monitor::DbSizeMonitor;
     use pg_multiplexer::pool::PoolManager;
 
-    let mut cfg = Config::default();
-    cfg.listen_addr = "127.0.0.1:0".to_string();
-    cfg.admin_listen_addr = "127.0.0.1:0".to_string();
-    cfg.upstream_host = pg_host();
-    cfg.upstream_port = pg_port();
-    let cfg = Arc::new(cfg);
+    let cfg = Arc::new(Config {
+        listen_addr: "127.0.0.1:0".to_string(),
+        admin_listen_addr: "127.0.0.1:0".to_string(),
+        upstream_host: pg_host(),
+        upstream_port: pg_port(),
+        ..Config::default()
+    });
 
     let metrics = Arc::new(admin::metrics::Metrics::new());
     let pool_manager = Arc::new(PoolManager::new(cfg.clone(), metrics.clone()));

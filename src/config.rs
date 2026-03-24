@@ -53,7 +53,7 @@ pub struct PoolConfig {
     pub max_connection_lifetime_secs: u64,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default)]
 pub struct TlsConfig {
     /// Enable TLS on the client-facing side.
@@ -112,19 +112,6 @@ impl Default for PoolConfig {
             health_check_interval_secs: 30,
             max_queue_size: 1000,
             max_connection_lifetime_secs: 3600,
-        }
-    }
-}
-
-impl Default for TlsConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            cert_path: String::new(),
-            key_path: String::new(),
-            require_tls: false,
-            upstream_tls: false,
-            upstream_tls_accept_invalid: false,
         }
     }
 }

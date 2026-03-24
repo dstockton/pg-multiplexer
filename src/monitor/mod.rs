@@ -8,6 +8,7 @@ use crate::config::Config;
 use crate::pool::PoolManager;
 
 /// Monitors database sizes and tracks configured limits.
+#[allow(dead_code)]
 pub struct DbSizeMonitor {
     cfg: Arc<Config>,
     pool_manager: Arc<PoolManager>,
@@ -57,6 +58,7 @@ impl DbSizeMonitor {
     }
 
     /// Check if a database is over its size limit.
+    #[allow(dead_code)]
     pub fn is_over_limit(&self, database: &str) -> bool {
         if let Some(limit) = self.get_db_limit(database) {
             if let Some(size) = self.get_db_size(database) {

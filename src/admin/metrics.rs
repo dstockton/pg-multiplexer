@@ -1,6 +1,7 @@
 use prometheus::{GaugeVec, IntCounter, IntGauge, Opts, Registry};
 
 /// All application metrics.
+#[allow(dead_code)]
 pub struct Metrics {
     pub registry: Registry,
 
@@ -148,5 +149,11 @@ impl Metrics {
             queries_total,
             queries_read_only_enforced,
         }
+    }
+}
+
+impl Default for Metrics {
+    fn default() -> Self {
+        Self::new()
     }
 }

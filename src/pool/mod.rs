@@ -232,6 +232,7 @@ impl PoolManager {
     }
 
     /// Run periodic maintenance: evict idle/expired connections, health checks.
+    #[allow(dead_code)]
     pub async fn run_maintenance(&self) {
         let interval = Duration::from_secs(self.cfg.pool.health_check_interval_secs);
         let mut ticker = tokio::time::interval(interval);

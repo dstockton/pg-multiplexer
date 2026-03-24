@@ -17,6 +17,7 @@ use crate::pool::PoolManager;
 
 /// Shared state for the admin server.
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct AdminState {
     pub cfg: Arc<Config>,
     pub metrics: Arc<Metrics>,
@@ -504,11 +505,11 @@ setInterval(refresh, 5000);
             .map(|d| {
                 let size_str = d
                     .size_bytes
-                    .map(|s| crate::monitor::format_bytes(s))
+                    .map(crate::monitor::format_bytes)
                     .unwrap_or_else(|| "-".to_string());
                 let limit_str = d
                     .limit_bytes
-                    .map(|s| crate::monitor::format_bytes(s))
+                    .map(crate::monitor::format_bytes)
                     .unwrap_or_else(|| "unlimited".to_string());
                 let status = if d.over_limit {
                     r#"<span class="badge badge-danger">READ-ONLY</span>"#

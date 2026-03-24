@@ -25,6 +25,7 @@ impl std::fmt::Display for PoolKey {
 
 /// Information extracted from the client's startup message.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ClientStartupInfo {
     pub user: String,
     pub database: String,

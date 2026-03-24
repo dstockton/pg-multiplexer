@@ -40,7 +40,7 @@ pub fn try_read_message(buf: &mut BytesMut, is_startup: bool) -> Result<Option<P
             return Ok(None);
         }
         let len = (&buf[0..4]).get_i32() as usize;
-        if len < 4 || len > MAX_MESSAGE_SIZE {
+        if !(4..=MAX_MESSAGE_SIZE).contains(&len) {
             bail!("Invalid startup message length: {}", len);
         }
         if buf.len() < len {
@@ -59,7 +59,7 @@ pub fn try_read_message(buf: &mut BytesMut, is_startup: bool) -> Result<Option<P
         }
         let msg_type = buf[0];
         let len = (&buf[1..5]).get_i32() as usize;
-        if len < 4 || len > MAX_MESSAGE_SIZE {
+        if !(4..=MAX_MESSAGE_SIZE).contains(&len) {
             bail!(
                 "Invalid message length: {} for type '{}'",
                 len,
